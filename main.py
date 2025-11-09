@@ -5,14 +5,25 @@ from armas import *
 from enemies import *
 
 pygame.init()
-
+pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Extra-SScape")
+
+# --- Música de fondo ---
+try:
+    pygame.mixer.music.load("music/OST-1.wav")
+    pygame.mixer.music.set_volume(0.5)  # volumen entre 0.0 y 1.0
+    pygame.mixer.music.play(-1)         # -1 = loop infinito
+except pygame.error as e:
+    print(f"Error al cargar música: {e}")
+
+# --- Sonidos ---
+explosion_sound = pygame.mixer.Sound("sound/explosive.wav")
+explosion_sound.set_volume(0.7)
 
 # --- Imágenes ---
-player_img = pygame.image.load("Imagenes/nave.png").convert_alpha()
-meteor_img = pygame.image.load("Imagenes/meteorito.png").convert_alpha()
-background_img = pygame.image.load("Imagenes/espacio.png").convert()
+player_img = pygame.image.load("Imagenes/A.png").convert_alpha()
+meteor_img = pygame.image.load("Imagenes/eye2.png").convert_alpha()
+background_img = pygame.image.load("Imagenes/sk1.png").convert()
 
 # --- Redimensionar imágenes ---
 player_img = pygame.transform.scale(player_img, PLAYER_SIZE)
@@ -36,6 +47,20 @@ last_shot = pygame.time.get_ticks()
 
 # --- Reloj ---
 clock = pygame.time.Clock()
+
+def reset_game():
+    global meteors, projectiles, score, player, last_shot
+
+    # Reiniciar listas y valores
+    meteors = []
+    projectiles = []
+    score = 0
+    last_shot = pygame.time.get_ticks()
+
+    # Reiniciar posición del jugador
+    player.x = WIDTH // 2 - PLAYER_SIZE[0] // 2
+    player.y = HEIGHT - PLAYER_SIZE[1] - 10
+
 
 # --- Bucle principal ---
 running = True
@@ -65,7 +90,7 @@ while running:
         player.y += 5
 
     # --- Generación de meteoritos ---
-    if len(meteors) < 5:
+    if len(meteors) < 10:
         size = random.choice(["grande", "mediano", "pequeño"])
         m = Meteor(
             random.randint(0, WIDTH - METEOR_SIZE[size][0]),
@@ -94,14 +119,21 @@ while running:
                 meteors.remove(m)
                 score += m.get_points()
 
+                 # Reproducir sonido de explosión
+                explosion_sound.play()
+
                 # Fragmentar meteorito
                 new_meteors = m.split()
                 meteors.extend(new_meteors)
                 break  # Salir del bucle de proyectiles para evitar error
 
         # Colisión con jugador
+        #if player.colliderect(m.rect):
+            #running = False
+            #break
         if player.colliderect(m.rect):
-            running = False
+            pygame.time.delay(1000)  # pausa breve (1 seg)
+            reset_game()              # reinicia todo
             break
 
     # --- Dibujar en pantalla ---
@@ -115,10 +147,11 @@ while running:
         p.draw(screen)
 
     # --- Mostrar puntuación ---
-    score_text = font.render(f"Puntuación: {score}", True, WHITE)
+    score_text = font.render(f"Puntuación: {score}", True, RED)
     screen.blit(score_text, (10, 10))
 
     pygame.display.flip()
-    clock.tick(60)
+    clock.tick(80)
+pygame.mixer.music.stop()
 
 pygame.quit()

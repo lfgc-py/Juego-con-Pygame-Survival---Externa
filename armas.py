@@ -11,4 +11,4 @@ class projectile:
         self.rect.y -= self.speed
 
     def draw(self, screen):
-        pygame.draw.rect(screen, YELLOW, self.rect)
+        pygame.draw.rect(screen, BLACK, self.rect)
