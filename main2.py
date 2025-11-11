@@ -82,6 +82,7 @@ def game_loop():
 
         # --- Dibujar ---
         screen.blit(espacio_img, (0, 0))
+        
         for meteor in meteors:
             screen.blit(meteorito_img, meteor)
         screen.blit(player_img, player)

@@ -19,7 +19,10 @@ except pygame.error as e:
 # --- Sonidos ---
 explosion_sound = pygame.mixer.Sound("sound/explosive.wav")
 explosion_sound.set_volume(0.7)
-
+shoot_sound = pygame.mixer.Sound("sound/shoot.wav")
+shoot_sound.set_volume(0.6)
+fboom = pygame.mixer.Sound("sound/fboom.wav")
+fboom.set_volume(0.8) 
 # --- Imágenes ---
 player_img = pygame.image.load("Imagenes/A.png").convert_alpha()
 meteor_img = pygame.image.load("Imagenes/eye2.png").convert_alpha()
@@ -40,22 +43,31 @@ projectiles = []
 
 # --- Puntuación ---
 score = 0
-font = pygame.font.Font(None, 36)
+dodged_meteors = 0
+destroyed_meteors = 0
+font = pygame.font.Font(None, 24)
 
 # --- Control de disparos ---
 last_shot = pygame.time.get_ticks()
 
+#Tiempo de inicio de juego
+start_time = pygame.time.get_ticks()
+
 # --- Reloj ---
 clock = pygame.time.Clock()
 
+# -- Función de Reinicio
 def reset_game():
-    global meteors, projectiles, score, player, last_shot
+    global meteors, projectiles, score, player, last_shot, start_time, dodged_meteors, destroyed_meteors
 
     # Reiniciar listas y valores
     meteors = []
     projectiles = []
     score = 0
     last_shot = pygame.time.get_ticks()
+    start_time = pygame.time.get_ticks()
+    dodged_meteors = 0
+    destroyed_meteors = 0 
 
     # Reiniciar posición del jugador
     player.x = WIDTH // 2 - PLAYER_SIZE[0] // 2
@@ -75,6 +87,8 @@ while running:
             # Disparo
             if event.key == pygame.K_SPACE and current_time - last_shot > SHOOT_DELAY:
                 last_shot = current_time
+                shoot_sound.play()
+        
                 if len(projectiles) < 5:
                     projectiles.append(projectile(player.centerx - 2, player.top))
 
@@ -109,6 +123,7 @@ while running:
         m.move()
         if m.rect.top > HEIGHT:
             meteors.remove(m)
+            dodged_meteors += 1
             continue
 
         # Colisión con proyectiles
@@ -118,9 +133,11 @@ while running:
                 projectiles.remove(p)
                 meteors.remove(m)
                 score += m.get_points()
+                destroyed_meteors += 1
 
                  # Reproducir sonido de explosión
                 explosion_sound.play()
+                
 
                 # Fragmentar meteorito
                 new_meteors = m.split()
@@ -128,10 +145,8 @@ while running:
                 break  # Salir del bucle de proyectiles para evitar error
 
         # Colisión con jugador
-        #if player.colliderect(m.rect):
-            #running = False
-            #break
         if player.colliderect(m.rect):
+            fboom.play()
             pygame.time.delay(1000)  # pausa breve (1 seg)
             reset_game()              # reinicia todo
             break
@@ -146,9 +161,22 @@ while running:
     for p in projectiles:
         p.draw(screen)
 
+    #Calcular Tiempo de juego
+    elapsed_time = (current_time - start_time) // 1000
+    minutes = elapsed_time // 60
+    seconds = elapsed_time % 60
+
     # --- Mostrar puntuación ---
     score_text = font.render(f"Puntuación: {score}", True, RED)
+    time_text = font.render(f"Tiempo: {minutes:02d}:{seconds:02d}", True, RED)
+    dodged_text = font.render(f"Evasión: {dodged_meteors}", True, RED)
+    destroyed_text = font.render(f"Destrucción: {destroyed_meteors}", True, RED)
+
     screen.blit(score_text, (10, 10))
+    screen.blit(time_text, (10, 35))
+    screen.blit(dodged_text, (10, 60))
+    screen.blit(destroyed_text, (10, 85))
+
 
     pygame.display.flip()
     clock.tick(80)
